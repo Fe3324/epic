@@ -29,7 +29,7 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 
 ### 1. Clone o repositório
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/Fe3324/epic.git
 cd epic
 ```
 
@@ -496,139 +496,73 @@ com.app.epic/
 
 #### 1. Erro de Lock no Banco H2
 ```bash
-# Parar aplicação
-Ctrl+C
-
-# Remover arquivo de lock
-rm data/testdb.mv.db.lock
-
+# Parar aplicação completamente
+# Verificar se não há processos Java rodando
 # Reiniciar aplicação
-./mvnw spring-boot:run
 ```
 
-#### 2. Erro de Migração Flyway
+#### 2. Flyway Migration Failed
 ```bash
-# Verificar status
+# Verificar se migração já foi aplicada
 ./mvnw flyway:info
 
-# Reparar metadados
+# Reparar metadados se necessário
 ./mvnw flyway:repair
-
-# Limpar e recriar (desenvolvimento)
-./mvnw flyway:clean
-./mvnw flyway:migrate
 ```
 
 #### 3. Porta 8080 em Uso
 ```bash
 # Verificar processo usando a porta
-netstat -an | findstr :8080
+netstat -ano | findstr :8080
 
-# Usar porta diferente
-./mvnw spring-boot:run -Dserver.port=8081
+# Alterar porta da aplicação
+java -jar -Dserver.port=8081 target/epic-0.0.1-SNAPSHOT.jar
 ```
-
-#### 4. Problemas de Memória
-```bash
-# Aumentar heap
-export MAVEN_OPTS="-Xmx1024m -Xms512m"
-./mvnw spring-boot:run
-```
-
-### Logs Úteis
-
-```bash
-# Logs do Flyway
-./mvnw flyway:info -X
-
-# Logs do Spring Boot
-./mvnw spring-boot:run -Dlogging.level.org.springframework=DEBUG
-
-# Logs SQL
-./mvnw spring-boot:run -Dlogging.level.org.hibernate.SQL=DEBUG
-```
-
-## 📊 Monitoramento
-
-### Actuator (Futuro)
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-actuator</artifactId>
-</dependency>
-```
-
-### Métricas Disponíveis
-
-- `/actuator/health` - Status da aplicação
-- `/actuator/info` - Informações da aplicação
-- `/actuator/metrics` - Métricas de performance
-- `/actuator/flyway` - Status das migrações
 
 ## 🤝 Contribuindo
 
-### Processo de Contribuição
-
 1. **Fork** o projeto
-2. **Clone** seu fork
-3. **Crie** uma branch para sua feature
-4. **Implemente** suas mudanças
-5. **Teste** todas as funcionalidades
-6. **Commit** suas mudanças
-7. **Push** para sua branch
-8. **Abra** um Pull Request
+2. **Crie** uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** para a branch (`git push origin feature/AmazingFeature`)
+5. **Abra** um Pull Request
 
-### Padrões de Código
-
-- **Nomenclatura**: camelCase para variáveis e métodos
-- **Documentação**: JavaDoc para classes e métodos públicos
-- **Testes**: Cobertura mínima de 80%
-- **Commits**: Mensagens descritivas em português
-
-### Exemplo de Commit
+### Convenções de Commit
 
 ```bash
-git commit -m "feat: adiciona endpoint para consulta de usuários
+# Novos recursos
+git commit -m "feat: adiciona endpoint de logout"
 
-- Implementa GET /api/users
-- Adiciona paginação e ordenação
-- Inclui testes unitários
-- Atualiza documentação"
+# Correções
+git commit -m "fix: corrige erro de validação de email"
+
+# Documentação
+git commit -m "docs: atualiza README com instruções de deploy"
+
+# Refatoração
+git commit -m "refactor: melhora estrutura do SecurityConfig"
+
+# Testes
+git commit -m "test: adiciona testes para UserService"
 ```
-
-## 📈 Roadmap
-
-### Versão 1.1
-- [ ] Implementar autenticação JWT
-- [ ] Adicionar endpoints REST para usuários
-- [ ] Implementar validação de dados
-- [ ] Adicionar tratamento de exceções global
-
-### Versão 1.2
-- [ ] Integrar Swagger/OpenAPI
-- [ ] Implementar cache com Spring Cache
-- [ ] Adicionar auditoria de entidades
-- [ ] Configurar profiles para diferentes ambientes
-
-### Versão 2.0
-- [ ] Migrar para PostgreSQL
-- [ ] Implementar Docker containers
-- [ ] Adicionar monitoring com Actuator
-- [ ] Configurar pipeline CI/CD
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 📞 Suporte
+## 📞 Contato
 
-Para suporte e dúvidas:
+- **Autor**: Felipe
+- **GitHub**: [@Fe3324](https://github.com/Fe3324)
+- **Email**: fe3324@example.com
 
-- **Issues**: Abra uma issue no repositório
-- **Documentação**: Consulte este README
-- **Logs**: Verifique os logs da aplicação
+## 🙏 Agradecimentos
+
+- Spring Boot Community
+- Flyway Team
+- H2 Database
+- Lombok Project
 
 ---
 
-**Desenvolvido com ❤️ usando Spring Boot e Java 17** 
+**Epic Application** - Desenvolvido com ❤️ por Felipe
