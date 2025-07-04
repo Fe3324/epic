@@ -1,10 +1,11 @@
 package com.app.epic.security;
 
+import com.app.epic.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -16,16 +17,10 @@ import java.util.function.Function;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
     
-    @Value("${jwt.secret:YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5emFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6}")
-    private String secretKey;
-    
-    @Value("${jwt.expiration:86400000}") // 24 horas em milissegundos
-    private long jwtExpiration;
-    
-    @Value("${jwt.refresh-expiration:604800000}") // 7 dias em milissegundos
-    private long refreshExpiration;
+    private final JwtProperties jwtProperties;
     
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -46,11 +41,11 @@ public class JwtUtil {
     }
     
     public String generateToken(Map<String, Object> extraClaims, String username) {
-        return buildToken(extraClaims, username, jwtExpiration);
+        return buildToken(extraClaims, username, jwtProperties.getExpiration());
     }
     
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails.getUsername(), refreshExpiration);
+        return buildToken(new HashMap<>(), userDetails.getUsername(), jwtProperties.getRefreshExpiration());
     }
     
     private String buildToken(
@@ -108,15 +103,15 @@ public class JwtUtil {
     }
     
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
         return Keys.hmacShaKeyFor(keyBytes);
     }
     
     public long getExpirationTime() {
-        return jwtExpiration;
+        return jwtProperties.getExpiration();
     }
     
     public long getRefreshExpirationTime() {
-        return refreshExpiration;
+        return jwtProperties.getRefreshExpiration();
     }
 } 

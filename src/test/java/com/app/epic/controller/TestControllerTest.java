@@ -30,7 +30,7 @@ class TestControllerTest {
         
         // Then
         assertNotNull(response);
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         
         ApiResponse<Map<String, Object>> body = response.getBody();
         assertNotNull(body);
@@ -67,7 +67,7 @@ class TestControllerTest {
         
         // Then
         assertNotNull(response);
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(200, response.getStatusCode().value());
         
         ApiResponse<Map<String, String>> body = response.getBody();
         assertNotNull(body);

@@ -2,11 +2,9 @@ package com.app.epic.mapper;
 
 import com.app.epic.dto.*;
 import com.app.epic.entity.User;
-import com.app.epic.entity.Role;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
