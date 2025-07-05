@@ -1,0 +1,55 @@
+-- EXEMPLO DE MIGRAÇÃO PERIGOSA - ESTA MIGRAÇÃO SERIA BLOQUEADA
+-- Arquivo: V99__EXAMPLE_DANGEROUS_MIGRATION.sql.disabled
+-- 
+-- IMPORTANTE: Este arquivo tem extensão .disabled para não ser executado
+-- Renomeie para .sql apenas para testar o sistema de segurança
+
+-- ⚠️  OPERAÇÃO PERIGOSA: DELETE
+-- Esta operação removeria todos os usuários inativos
+DELETE FROM users WHERE enabled = false;
+
+-- ⚠️  OPERAÇÃO PERIGOSA: TRUNCATE
+-- Esta operação removeria todos os registros da tabela
+TRUNCATE TABLE system_logs;
+
+-- ⚠️  OPERAÇÃO PERIGOSA: DROP
+-- Esta operação removeria a tabela completamente
+DROP TABLE IF EXISTS temp_migration_table;
+
+-- ⚠️  OPERAÇÃO PERIGOSA: DROP INDEX
+-- Esta operação removeria um índice importante
+DROP INDEX idx_users_email;
+
+-- ========================================
+-- COMO TESTAR O SISTEMA DE SEGURANÇA:
+-- ========================================
+-- 1. Renomeie este arquivo para V99__EXAMPLE_DANGEROUS_MIGRATION.sql
+-- 2. Execute a aplicação
+-- 3. Observe que a migração será bloqueada com mensagem de erro
+-- 
+-- Para permitir a execução, você pode:
+-- 1. Configurar: flyway.security.validation.enabled=false
+-- 2. Configurar: flyway.security.validation.mode=permissive
+-- 3. Adicionar ao bypass: flyway.security.current.environment=test
+-- 4. Permitir operações específicas em flyway.security.allowed-operations
+
+-- ========================================
+-- OPERAÇÕES PERMITIDAS (NÃO SERIAM BLOQUEADAS):
+-- ========================================
+
+-- ✅ CREATE com IF NOT EXISTS é permitido
+CREATE TABLE IF NOT EXISTS example_table (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+-- ✅ ALTER TABLE DROP CONSTRAINT é permitido
+ALTER TABLE users DROP CONSTRAINT IF EXISTS old_constraint;
+
+-- ✅ ON DELETE CASCADE é permitido
+ALTER TABLE addresses 
+ADD CONSTRAINT fk_user_address 
+FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- ✅ Inserções são sempre permitidas
+INSERT INTO example_table (id, name) VALUES (1, 'Test'); 

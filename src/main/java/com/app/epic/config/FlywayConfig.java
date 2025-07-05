@@ -15,13 +15,17 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 @Configuration
 public class FlywayConfig {
 
+    private static final Logger logger = Logger.getLogger(FlywayConfig.class.getName());
+
     @Value("${spring.flyway.locations:classpath:db/migration}")
     private String defaultLocations;
 
+    @Value("${spring.flyway.enabled:true}")
     private boolean flywayEnabled = true;
 
     @Autowired
@@ -32,81 +36,78 @@ public class FlywayConfig {
     @DependsOn("dataSource")
     public Flyway flyway() {
         if (!flywayEnabled) {
+            logger.info("Flyway está desabilitado via configuração");
             return null;
         }
 
-        DatabaseType databaseType = detectDatabaseType();
-        List<String> locations = buildMigrationLocations(databaseType);
-        
-        FluentConfiguration config = Flyway.configure()
-                .dataSource(dataSource)
-                .locations(locations.toArray(new String[0]))
-                .baselineOnMigrate(true)
-                .validateOnMigrate(true)
-                .outOfOrder(false)
-                .cleanDisabled(true);
+        try {
+            DatabaseType databaseType = detectDatabaseType();
+            List<String> locations = buildMigrationLocations(databaseType);
+            
+            FluentConfiguration config = Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations(locations.toArray(new String[0]))
+                    .baselineOnMigrate(true)
+                    .validateOnMigrate(true)
+                    .cleanDisabled(true)
+                    .callbacks(new FlywaySecurityCallback());
 
-        // Configurações específicas por banco
-        configureDatabaseSpecific(config, databaseType);
+            configureDatabaseSpecific(config, databaseType);
+            logFlywayConfiguration(databaseType, locations);
 
-        Flyway flyway = config.load();
-        
-        // Log das configurações
-        logFlywayConfiguration(databaseType, locations);
-        
-        return flyway;
+            Flyway flyway = config.load();
+            
+            flyway.migrate();
+            
+            logger.info("Migrações Flyway executadas com sucesso!");
+            return flyway;
+            
+        } catch (Exception e) {
+            logger.severe("Erro ao configurar Flyway: " + e.getMessage());
+            throw new RuntimeException("Falha na configuração do Flyway", e);
+        }
     }
 
     private DatabaseType detectDatabaseType() {
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
-            String databaseProductName = metaData.getDatabaseProductName().toLowerCase();
-            String databaseProductVersion = metaData.getDatabaseProductVersion();
+            String databaseProduct = metaData.getDatabaseProductName().toLowerCase();
             
-            System.out.println("=== DETECÇÃO DO BANCO DE DADOS ===");
-            System.out.println("Produto: " + databaseProductName);
-            System.out.println("Versão: " + databaseProductVersion);
-            System.out.println("Driver: " + metaData.getDriverName());
-            System.out.println("URL: " + metaData.getURL());
+            logger.info("=== DETECÇÃO DO BANCO DE DADOS ===");
+            logger.info("Produto: " + databaseProduct);
             
-            if (databaseProductName.contains("oracle")) {
-                System.out.println("Banco detectado: ORACLE");
+            if (databaseProduct.contains("oracle")) {
+                logger.info("Banco detectado: ORACLE");
                 return DatabaseType.ORACLE;
-            } else if (databaseProductName.contains("h2")) {
-                System.out.println("Banco detectado: H2");
+            } else if (databaseProduct.contains("h2")) {
+                logger.info("Banco detectado: H2");
                 return DatabaseType.H2;
-            } else if (databaseProductName.contains("mysql")) {
-                System.out.println("Banco detectado: MYSQL");
+            } else if (databaseProduct.contains("mysql")) {
+                logger.info("Banco detectado: MYSQL");
                 return DatabaseType.MYSQL;
-            } else if (databaseProductName.contains("postgresql")) {
-                System.out.println("Banco detectado: POSTGRESQL");
+            } else if (databaseProduct.contains("postgresql")) {
+                logger.info("Banco detectado: POSTGRESQL");
                 return DatabaseType.POSTGRESQL;
             } else {
-                System.out.println("Banco detectado: GENÉRICO (" + databaseProductName + ")");
+                logger.warning("Banco não identificado, usando configuração genérica");
                 return DatabaseType.GENERIC;
             }
-            
         } catch (SQLException e) {
-            System.err.println("Erro ao detectar tipo do banco: " + e.getMessage());
+            logger.warning("Erro ao detectar tipo do banco: " + e.getMessage());
             return DatabaseType.GENERIC;
         }
     }
 
     private List<String> buildMigrationLocations(DatabaseType databaseType) {
         List<String> locations = new ArrayList<>();
-        
-        // Migrações comuns (sempre incluídas)
         locations.add("classpath:db/migration");
         
-        // Migrações específicas por banco
         switch (databaseType) {
             case ORACLE:
                 locations.add("classpath:db/migration/oracle");
-                locations.add("classpath:db/migration/oracle-specific");
                 break;
             case H2:
                 locations.add("classpath:db/migration/h2");
-                locations.add("classpath:db/migration/h2-specific");
                 break;
             case MYSQL:
                 locations.add("classpath:db/migration/mysql");
@@ -115,7 +116,7 @@ public class FlywayConfig {
                 locations.add("classpath:db/migration/postgresql");
                 break;
             default:
-                // Apenas migrações genéricas
+                // Apenas o diretório padrão
                 break;
         }
         
@@ -125,35 +126,25 @@ public class FlywayConfig {
     private void configureDatabaseSpecific(FluentConfiguration config, DatabaseType databaseType) {
         switch (databaseType) {
             case ORACLE:
-                config.sqlMigrationPrefix("V")
-                      .sqlMigrationSeparator("__")
-                      .sqlMigrationSuffixes(".sql")
+                config.sqlMigrationSeparator("__")
                       .placeholderReplacement(true)
-                      .placeholders(java.util.Map.of(
-                          "schema", "EPIC_SCHEMA",
-                          "tablespace", "USERS"
-                      ))
-                      .schemas("EPIC_SCHEMA");
+                      .placeholders(java.util.Map.of("tablespace", "USERS"));
                 break;
-                
             case H2:
-                config.sqlMigrationPrefix("V")
-                      .sqlMigrationSeparator("__")
-                      .sqlMigrationSuffixes(".sql")
-                      .placeholderReplacement(true);
-                break;
-                
-            case MYSQL:
-                config.sqlMigrationPrefix("V")
-                      .sqlMigrationSeparator("__")
-                      .sqlMigrationSuffixes(".sql")
+                config.sqlMigrationSeparator("__")
                       .placeholderReplacement(true)
-                      .placeholders(java.util.Map.of(
-                          "engine", "InnoDB",
-                          "charset", "utf8mb4"
-                      ));
+                      .placeholders(java.util.Map.of("mode", "MySQL"));
                 break;
-                
+            case MYSQL:
+                config.sqlMigrationSeparator("__")
+                      .placeholderReplacement(true)
+                      .placeholders(java.util.Map.of("engine", "InnoDB"));
+                break;
+            case POSTGRESQL:
+                config.sqlMigrationSeparator("__")
+                      .placeholderReplacement(true)
+                      .placeholders(java.util.Map.of("schema", "public"));
+                break;
             default:
                 // Configuração padrão
                 break;
@@ -161,13 +152,10 @@ public class FlywayConfig {
     }
 
     private void logFlywayConfiguration(DatabaseType databaseType, List<String> locations) {
-        System.out.println("=== CONFIGURAÇÃO DO FLYWAY ===");
-        System.out.println("Tipo de banco: " + databaseType);
-        System.out.println("Locais de migração:");
-        for (String location : locations) {
-            System.out.println("  - " + location);
-        }
-        System.out.println("================================");
+        logger.info("=== CONFIGURAÇÃO DO FLYWAY ===");
+        logger.info("Tipo de banco: " + databaseType);
+        logger.info("Locais de migração:");
+        locations.forEach(location -> logger.info("  - " + location));
     }
 
     public enum DatabaseType {
