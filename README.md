@@ -1025,7 +1025,6 @@ copies or substantial portions of the Software.
 - 👤 **Nome**: Felipe
 - 🐙 **GitHub**: [@Fe3324](https://github.com/Fe3324)
 - 📧 **Email**: fe3324@example.com
-- 💼 **LinkedIn**: [Felipe Silva](https://linkedin.com/in/fe3324)
 
 ### **Comunidade e Suporte**
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Fe3324/epic/issues)
